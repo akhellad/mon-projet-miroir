@@ -1,0 +1,51 @@
+.map-toolbar {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #375B6A;
+  box-shadow: 0 3px 12px rgba(16, 22, 133, 0.2);
+  border-radius: 8px;
+  padding: 8px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 2px solid #101685;
+}
+
+.toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(138, 196, 255, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 40px;
+  height: 40px;
+}
+
+.toolbar-btn:hover {
+  background: rgba(138, 196, 255, 0.2);
+  border-color: #8AC4FF;
+}
+
+.toolbar-btn.active {
+  background: #38ABAE;
+  border-color: #57CC99;
+  box-shadow: 0 0 8px rgba(87, 204, 153, 0.4);
+}
+
+.toolbar-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.toolbar-btn.active .toolbar-icon {
+  filter: brightness(0) invert(1);
+}

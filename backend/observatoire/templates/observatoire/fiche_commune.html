@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Fiche de synthèse - {{ commune.nom }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            color: #333;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid #1e40af;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .header-left {
+            color: #1e40af;
+            font-weight: bold;
+            font-size: 18pt;
+        }
+
+        .header-center {
+            text-align: center;
+            flex: 1;
+            margin: 0 20px;
+        }
+
+        .header-center h1 {
+            margin: 0;
+            font-size: 14pt;
+            color: #1e40af;
+        }
+
+        .header-center p {
+            margin: 5px 0 0 0;
+            font-size: 10pt;
+            font-style: italic;
+        }
+
+        .header-right {
+            text-align: right;
+        }
+
+        .commune-title {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #1e40af;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            background: #1e40af;
+            color: white;
+            padding: 8px 12px;
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .info-box {
+            border: 1px solid #e5e7eb;
+            padding: 12px;
+            background: #f9fafb;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #6b7280;
+            font-size: 9pt;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 18pt;
+            color: #1e40af;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table th {
+            background: #eff6ff;
+            color: #1e40af;
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+            font-size: 10pt;
+        }
+
+        table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            font-size: 10pt;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 1cm;
+            left: 2cm;
+            right: 2cm;
+            text-align: center;
+            font-size: 9pt;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            ARDÈCHE
+        </div>
+        <div class="header-center">
+            <h1>SCHEMA DEPARTEMENTAL D'ALIMENTATION EN EAU POTABLE</h1>
+            <p>Fiche de synthèse - Commune</p>
+        </div>
+        <div class="header-right">
+            <div class="commune-title">{{ commune.nom|upper }}</div>
+            <div style="font-size: 10pt;">N° {{ commune.code_insee }}</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">DONNÉES ADMINISTRATIVES</div>
+
+        <table>
+            <tr>
+                <th>Code INSEE</th>
+                <th>Nom de la commune</th>
+                <th>Population ({{ date_generation }})</th>
+            </tr>
+            <tr>
+                <td>{{ commune.code_insee }}</td>
+                <td>{{ commune.nom }}</td>
+                <td>{{ commune.population|default:"Non renseigné" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">INDICATEURS CLÉS</div>
+
+        <div class="info-grid">
+            <div class="info-box">
+                <div class="info-label">POPULATION</div>
+                <div class="info-value">{{ commune.population|default:"N/A" }}</div>
+                <div style="font-size: 9pt; color: #6b7280; margin-top: 5px;">habitants</div>
+            </div>
+
+            <div class="info-box">
+                <div class="info-label">CODE INSEE</div>
+                <div class="info-value" style="font-size: 14pt;">{{ commune.code_insee }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">POPULATION - DONNÉES ET PERSPECTIVES</div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <img src="{{ top_communes_chart }}" style="width: 100%; max-width: 600px;" alt="Top 10 communes par population">
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">CONTEXTE DÉPARTEMENTAL</div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div style="text-align: center;">
+                <img src="{{ pie_chart }}" style="width: 100%; max-width: 350px;" alt="Répartition par tranche de population">
+            </div>
+            <div style="text-align: center;">
+                <img src="{{ distribution_chart }}" style="width: 100%; max-width: 400px;" alt="Distribution des communes">
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Document généré le {{ date_generation }} - Observatoire SDAEP Ardèche
+    </div>
+</body>
+</html>

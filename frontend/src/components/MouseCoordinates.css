@@ -1,0 +1,54 @@
+.mouse-coordinates {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 8px 16px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: 12px;
+  z-index: 1000;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+.coordinate-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.coordinate-label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.coordinate-value {
+  color: #1f2937;
+  font-family: 'Courier New', monospace;
+}
+
+.coordinate-separator {
+  color: #9ca3af;
+  margin: 0 4px;
+}
+
+.coordinate-secondary {
+  font-size: 11px;
+  color: #6b7280;
+  padding-top: 4px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.coordinate-secondary .coordinate-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.coordinate-secondary .coordinate-value {
+  color: #6b7280;
+}
