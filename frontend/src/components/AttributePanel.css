@@ -323,3 +323,98 @@
   padding-top: 8px;
   border-top: 1px solid #e5e7eb;
 }
+
+/* Styles pour les objets et tableaux imbriqués (UDI, etc.) */
+
+/* Accordéon pour tableaux d'objets */
+.nested-list-accordion {
+  margin-top: 6px;
+}
+
+.accordion-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f0f4f8;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px 12px;
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9em;
+  color: #375B6A;
+  font-weight: 500;
+}
+
+.accordion-toggle:hover {
+  background: #e5eaf0;
+  border-color: #38ABAE;
+}
+
+.accordion-icon {
+  font-size: 0.8em;
+  color: #38ABAE;
+  transition: transform 0.2s ease;
+}
+
+.accordion-label {
+  flex: 1;
+  text-align: left;
+}
+
+/* Liste déroulante */
+.nested-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nested-item {
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 6px;
+  border-left: 3px solid #38ABAE;
+  font-size: 0.9em;
+}
+
+.nested-item-header {
+  font-weight: 600;
+  color: #375B6A;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.95em;
+}
+
+.nested-field {
+  margin: 4px 0;
+  line-height: 1.5;
+}
+
+.nested-field strong {
+  color: #375B6A;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.nested-object {
+  background: #f8f9fa;
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  font-size: 0.9em;
+}

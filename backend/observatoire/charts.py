@@ -10,7 +10,7 @@ matplotlib.use('Agg')  # Backend sans interface graphique pour environnement ser
 import matplotlib.pyplot as plt
 import io
 import base64
-from .models import Layer, Feature
+from .models import Layer, Feature, Commune
 
 # Configuration globale du style des graphiques
 plt.rcParams['font.family'] = 'sans-serif'
@@ -43,19 +43,10 @@ def generate_top_communes_chart():
     """
     fig, ax = plt.subplots(figsize=(8, 5))
 
-    # Récupération de la couche Communes
-    communes_layer = get_communes_layer()
-    if communes_layer:
-        # Récupération des 10 communes les plus peuplées
-        top_communes = Feature.objects.filter(layer=communes_layer).order_by(
-            '-properties__population'
-        )[:10]
-
-        names = [c.properties.get('nom', 'N/A') for c in top_communes]
-        populations = [c.properties.get('population') or 0 for c in top_communes]
-    else:
-        names = []
-        populations = []
+    # Note: La population n'est pas encore disponible dans le modèle Commune
+    # Ce graphique sera fonctionnel une fois que les données de population seront importées
+    names = []
+    populations = []
 
     bars = ax.barh(names, populations, color='#1e40af', edgecolor='white', linewidth=1)
     ax.set_xlabel('Population', fontsize=10)
@@ -86,42 +77,10 @@ def generate_population_pie_chart():
     """
     fig, ax = plt.subplots(figsize=(6, 5))
 
-    # Récupération de toutes les communes
-    communes_layer = get_communes_layer()
-    if not communes_layer:
-        plt.close(fig)
-        return ""
-
-    all_communes = Feature.objects.filter(layer=communes_layer)
-
-    # Définition des tranches (identique au dashboard)
-    ranges = [
-        ('< 200', 0, 200),
-        ('200-500', 200, 500),
-        ('500-1000', 500, 1000),
-        ('1000-2000', 1000, 2000),
-        ('2000-3000', 2000, 3000),
-        ('3000-5000', 3000, 5000),
-        ('5000-10000', 5000, 10000),
-        ('> 10000', 10000, None)  # None pour indiquer pas de limite supérieure
-    ]
-
+    # Note: La population n'est pas encore disponible dans le modèle Commune
+    # Ce graphique sera fonctionnel une fois que les données de population seront importées
     counts = []
     labels = []
-
-    for label, min_pop, max_pop in ranges:
-        if max_pop is None:
-            # Dernière tranche sans limite supérieure
-            count = all_communes.filter(properties__population__gte=min_pop).count()
-        else:
-            count = all_communes.filter(
-                properties__population__gte=min_pop,
-                properties__population__lt=max_pop
-            ).count()
-
-        if count > 0:
-            counts.append(count)
-            labels.append(f'{label}: {count}')
 
     colors = ['#1e3a8a', '#1e40af', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#60a5fa', '#3b82f6']
 
@@ -165,40 +124,10 @@ def generate_population_distribution_bar_chart():
     """
     fig, ax = plt.subplots(figsize=(7, 4))
 
-    # Récupération de toutes les communes
-    communes_layer = get_communes_layer()
-    if not communes_layer:
-        plt.close(fig)
-        return ""
-
-    all_communes = Feature.objects.filter(layer=communes_layer)
-
-    # Définition des tranches (identique au dashboard)
-    ranges = [
-        ('> 10000', 10000, None),
-        ('5000-10000', 5000, 10000),
-        ('3000-5000', 3000, 5000),
-        ('2000-3000', 2000, 3000),
-        ('1000-2000', 1000, 2000),
-        ('500-1000', 500, 1000),
-        ('200-500', 200, 500),
-        ('< 200', 0, 200)
-    ]
-
+    # Note: La population n'est pas encore disponible dans le modèle Commune
+    # Ce graphique sera fonctionnel une fois que les données de population seront importées
     counts = []
     labels = []
-
-    for label, min_pop, max_pop in ranges:
-        if max_pop is None:
-            # Première tranche sans limite supérieure
-            count = all_communes.filter(properties__population__gte=min_pop).count()
-        else:
-            count = all_communes.filter(
-                properties__population__gte=min_pop,
-                properties__population__lt=max_pop
-            ).count()
-        counts.append(count)
-        labels.append(label)
 
     colors = ['#1e3a8a', '#1e40af', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe']
 

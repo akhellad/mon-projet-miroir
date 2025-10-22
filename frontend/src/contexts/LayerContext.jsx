@@ -14,6 +14,7 @@ export function LayerProvider({ children }) {
   const [layers, setLayers] = useState([]);
   const [layersData, setLayersData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [activeLayerId, setActiveLayerId] = useState(null);
   const loadingRef = useRef(false);
   const lastLoadRef = useRef(0);
 
@@ -109,13 +110,51 @@ export function LayerProvider({ children }) {
     }
   }, []);
 
+  /**
+   * Réorganise les couches en mettant à jour leur ordre (z-index)
+   * @param {Array} layersOrder - Tableau d'objets {id, order}
+   */
+  const reorderLayers = useCallback(async (layersOrder) => {
+    // Mise à jour optimiste : mettre à jour l'UI immédiatement
+    const orderMap = new Map(layersOrder.map(l => [l.id, l.order]));
+    setLayers(prev => {
+      return prev
+        .map(layer => ({
+          ...layer,
+          order: orderMap.get(layer.id) ?? layer.order
+        }))
+        .sort((a, b) => (a.order || 0) - (b.order || 0)); // Tri par order croissant
+    });
+
+    // Puis synchroniser avec le backend
+    try {
+      await axios.post(`${API_BASE_URL}/api/layers/reorder/`, { layers: layersOrder });
+    } catch (err) {
+      console.error('Erreur réorganisation couches:', err);
+      // En cas d'erreur, recharger les couches depuis le serveur
+      loadLayers(true);
+      throw err;
+    }
+  }, [loadLayers]);
+
+  /**
+   * Définit la couche active pour la sélection d'entités
+   * @param {Number|null} layerId - ID de la couche à activer, ou null pour désactiver
+   */
+  const setActiveLayer = useCallback((layerId) => {
+    setActiveLayerId(layerId);
+  }, []);
+
   const value = {
     layers,
     layersData,
     isLoading,
+    activeLayerId,
     loadLayers,
     updateLayerVisibility,
-    updateLayerStyle
+    updateLayerStyle,
+    reorderLayers,
+    setActiveLayer
   };
 
   return (

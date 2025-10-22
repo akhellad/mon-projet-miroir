@@ -12,7 +12,8 @@ from observatoire.views import (
     preview_commune_html,
     upload_shapefile,
     layer_geojson,
-    layer_properties
+    layer_properties,
+    reorder_layers
 )
 
 router = DefaultRouter()
@@ -20,10 +21,13 @@ router.register(r'layers', LayerViewSet, basename='layer')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include(router.urls)),
+    # Routes spécifiques AVANT le router pour éviter les conflits
+    path('api/layers/reorder/', reorder_layers, name='reorder_layers'),
+    path('api/layers/<int:layer_id>/geojson/', layer_geojson, name='layer_geojson'),
+    path('api/layers/<int:layer_id>/properties/', layer_properties, name='layer_properties'),
     path('api/export/commune/<str:code_insee>/', export_commune_pdf, name='export_commune_pdf'),
     path('api/preview/commune/<str:code_insee>/', preview_commune_html, name='preview_commune_html'),
     path('api/upload-shapefile/', upload_shapefile, name='upload_shapefile'),
-    path('api/layers/<int:layer_id>/geojson/', layer_geojson, name='layer_geojson'),
-    path('api/layers/<int:layer_id>/properties/', layer_properties, name='layer_properties'),
+    # Router DRF (doit être après les routes spécifiques)
+    path('api/', include(router.urls)),
 ]

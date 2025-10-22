@@ -7,11 +7,14 @@ import LayerPropertiesModal from './LayerPropertiesModal';
  * - Sélection du fond de carte (OSM, IGN BD ORTHO, SCAN 25, Satellite)
  * - Gestion de la visibilité et du style des couches
  * - Affichage des propriétés des couches
+ * - Réorganisation des couches par drag-and-drop (comme QGIS)
  */
 function Sidebar({ baseLayer, onBaseLayerChange }) {
-  const { layers, updateLayerVisibility, updateLayerStyle, loadLayers } = useLayerContext();
+  const { layers, updateLayerVisibility, updateLayerStyle, loadLayers, reorderLayers, activeLayerId, setActiveLayer } = useLayerContext();
   const [selectedLayer, setSelectedLayer] = useState(null);
   const [expandedLayers, setExpandedLayers] = useState(new Set());
+  const [draggedLayerId, setDraggedLayerId] = useState(null);
+  const [dragOverLayerId, setDragOverLayerId] = useState(null);
 
   const toggleLayerExpanded = (layerId) => {
     const newExpanded = new Set(expandedLayers);
@@ -44,6 +47,70 @@ function Sidebar({ baseLayer, onBaseLayerChange }) {
     } catch (err) {
       console.error('Erreur mise à jour style:', err);
     }
+  };
+
+  // Gestion du drag-and-drop
+  const handleDragStart = (e, layerId) => {
+    setDraggedLayerId(layerId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, layerId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverLayerId(layerId);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverLayerId(null);
+  };
+
+  const handleDrop = async (e, targetLayerId) => {
+    e.preventDefault();
+    setDragOverLayerId(null);
+
+    if (!draggedLayerId || draggedLayerId === targetLayerId) {
+      setDraggedLayerId(null);
+      return;
+    }
+
+    // Travailler avec le tableau trié (comme affiché dans la sidebar)
+    const sortedLayers = [...layers].sort((a, b) => (b.order || 0) - (a.order || 0));
+
+    // Trouver les index dans le tableau trié
+    const draggedIndex = sortedLayers.findIndex(l => l.id === draggedLayerId);
+    const targetIndex = sortedLayers.findIndex(l => l.id === targetLayerId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedLayerId(null);
+      return;
+    }
+
+    // Créer un nouveau tableau avec le nouvel ordre
+    const newLayers = [...sortedLayers];
+    const [removed] = newLayers.splice(draggedIndex, 1);
+    newLayers.splice(targetIndex, 0, removed);
+
+    // Mettre à jour les valeurs d'order
+    // Index 0 dans la sidebar = order le plus élevé (premier plan sur la carte)
+    const layersWithNewOrder = newLayers.map((layer, index) => ({
+      id: layer.id,
+      order: newLayers.length - 1 - index  // Index 0 = order max (newLayers.length - 1)
+    }));
+
+    try {
+      // Envoyer au backend
+      await reorderLayers(layersWithNewOrder);
+    } catch (err) {
+      console.error('Erreur réorganisation:', err);
+    }
+
+    setDraggedLayerId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedLayerId(null);
+    setDragOverLayerId(null);
   };
 
   return (
@@ -85,12 +152,30 @@ function Sidebar({ baseLayer, onBaseLayerChange }) {
           <p className="no-layers-text">Aucune couche importée</p>
         ) : (
           <div className="layers-list-sidebar">
-            {layers.map(layer => {
+            {/* Trier par order décroissant : order le plus élevé en haut (premier plan) */}
+            {[...layers].sort((a, b) => (b.order || 0) - (a.order || 0)).map(layer => {
               const isExpanded = expandedLayers.has(layer.id);
+              const isDragging = draggedLayerId === layer.id;
+              const isDragOver = dragOverLayerId === layer.id;
+
+              const isActiveLayer = activeLayerId === layer.id;
+
               return (
-                <div key={layer.id} className="layer-item-accordion">
+                <div
+                  key={layer.id}
+                  className={`layer-item-accordion ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''} ${isActiveLayer ? 'active-layer' : ''}`}
+                  draggable={true}
+                  onDragStart={(e) => handleDragStart(e, layer.id)}
+                  onDragOver={(e) => handleDragOver(e, layer.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, layer.id)}
+                  onDragEnd={handleDragEnd}
+                >
                   <div className="layer-item-header" onClick={() => toggleLayerExpanded(layer.id)}>
                     <div className="layer-header-left">
+                      <span className="layer-drag-handle" title="Glisser pour réorganiser">
+                        ⋮⋮
+                      </span>
                       <span className="layer-expand-icon">
                         {isExpanded ? '▼' : '▶'}
                       </span>
@@ -104,6 +189,15 @@ function Sidebar({ baseLayer, onBaseLayerChange }) {
                         onClick={(e) => e.stopPropagation()}
                         className="layer-checkbox-input"
                       />
+                      <button
+                        className={`layer-select-btn ${isActiveLayer ? 'active' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveLayer(isActiveLayer ? null : layer.id);
+                        }}
+                        title={isActiveLayer ? "Couche active - cliquer pour désélectionner" : "Cliquer pour activer cette couche"}
+                      >
+                      </button>
                       <div
                         className="layer-color-dot"
                         style={{ backgroundColor: layer.style_color }}

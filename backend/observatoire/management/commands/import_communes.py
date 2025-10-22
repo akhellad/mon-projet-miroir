@@ -13,7 +13,7 @@ Options:
 
 from django.core.management.base import BaseCommand
 from django.contrib.gis.geos import GEOSGeometry, MultiPolygon
-from observatoire.models import Layer, Feature
+from observatoire.models import Layer, Feature, Commune
 import requests
 import json
 
@@ -101,19 +101,22 @@ class Command(BaseCommand):
                 code_insee = props['code']
                 nom = props['nom']
                 population = props.get('population')
-
-                # Construction des propriétés de la feature
-                properties = {
-                    'code_insee': code_insee,
-                    'nom': nom,
-                    'population': population
-                }
+                code_postals = props.get('codesPostaux', [])
 
                 # Enregistrement de la feature en base
-                Feature.objects.create(
+                feature_obj = Feature.objects.create(
                     layer=layer,
-                    geom=geom,
-                    properties=properties
+                    geom=geom
+                )
+
+                # Création de la commune avec tous les champs disponibles
+                Commune.objects.create(
+                    code_insee=code_insee,
+                    nom=nom,
+                    feature=feature_obj,
+                    superficie_km2=geom.area / 1_000_000,
+                    population=population,
+                    code_postal_commune=code_postals[0] if code_postals else None
                 )
 
                 created_count += 1

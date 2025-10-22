@@ -122,15 +122,134 @@ function AttributePanel({ feature, features, onClose, onExportPDF }) {
       .join(' ');
   }
 
+  // État pour gérer les accordéons des tableaux d'objets
+  const [expandedArrays, setExpandedArrays] = useState({});
+
+  /**
+   * Toggle l'expansion d'un tableau d'objets (UDI, etc.)
+   */
+  const toggleArrayExpansion = (fieldKey) => {
+    setExpandedArrays(prev => ({
+      ...prev,
+      [fieldKey]: !prev[fieldKey]
+    }));
+  };
+
   /**
    * Formate les valeurs des champs selon leur type
    * Gère les nombres avec séparateurs de milliers (format français)
+   * Gère les tableaux et objets (JSON) avec accordion pour les tableaux d'objets
    */
-  function formatFieldValue(value) {
+  function formatFieldValue(value, fieldKey = '') {
     if (value === null || value === undefined) return 'N/A';
 
     if (typeof value === 'number') {
       return value.toLocaleString('fr-FR');
+    }
+
+    // Gestion des tableaux
+    if (Array.isArray(value)) {
+      // Cas spécial : udis (tableau d'objets UDI) → Accordion spécifique
+      if (fieldKey === 'udis' && value.length > 0) {
+        const isExpanded = expandedArrays[fieldKey] || false;
+
+        return (
+          <div className="nested-list-accordion">
+            <button
+              className="accordion-toggle"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleArrayExpansion(fieldKey);
+              }}
+            >
+              <span className="accordion-icon">{isExpanded ? '▼' : '▶'}</span>
+              <span className="accordion-label">
+                {value.length} UDI associée{value.length > 1 ? 's' : ''}
+              </span>
+            </button>
+
+            {isExpanded && (
+              <div className="nested-list">
+                {value.map((udi, index) => (
+                  <div key={index} className="nested-item">
+                    <div className="nested-item-header">{udi.nom_ins_udi || `UDI ${index + 1}`}</div>
+                    <div className="nested-field">
+                      <strong>Code INS:</strong> {udi.code_ins_udi || 'N/A'}
+                    </div>
+                    {udi.nom_quartier && (
+                      <div className="nested-field">
+                        <strong>Quartier desservi:</strong> {udi.nom_quartier}
+                      </div>
+                    )}
+                    {udi.type_usage_direct && (
+                      <div className="nested-field">
+                        <strong>Type d'usage:</strong> {udi.type_usage_direct}
+                      </div>
+                    )}
+                    {udi.type_etat_activite_ins && (
+                      <div className="nested-field">
+                        <strong>État d'activité:</strong> {udi.type_etat_activite_ins}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // Cas général : tableau d'objets → Accordion
+      if (value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+        const isExpanded = expandedArrays[fieldKey] || false;
+
+        return (
+          <div className="nested-list-accordion">
+            <button
+              className="accordion-toggle"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleArrayExpansion(fieldKey);
+              }}
+            >
+              <span className="accordion-icon">{isExpanded ? '▼' : '▶'}</span>
+              <span className="accordion-label">
+                {value.length} élément{value.length > 1 ? 's' : ''}
+              </span>
+            </button>
+
+            {isExpanded && (
+              <div className="nested-list">
+                {value.map((item, index) => (
+                  <div key={index} className="nested-item">
+                    <div className="nested-item-header">Élément {index + 1}</div>
+                    {Object.entries(item).map(([k, v]) => (
+                      <div key={k} className="nested-field">
+                        <strong>{formatFieldName(k)}:</strong> {v || 'N/A'}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      }
+      // Tableau simple (nombres, strings)
+      return value.join(', ');
+    }
+
+    // Gestion des objets
+    if (typeof value === 'object') {
+      return (
+        <div className="nested-object">
+          {Object.entries(value).map(([k, v]) => (
+            <div key={k} className="nested-field">
+              <strong>{formatFieldName(k)}:</strong> {String(v)}
+            </div>
+          ))}
+        </div>
+      );
     }
 
     return String(value);
@@ -250,7 +369,7 @@ function AttributePanel({ feature, features, onClose, onExportPDF }) {
                   <div key={key} className="attribute-row">
                     <span className="attribute-label">{formatFieldName(key)}</span>
                     <span className={`attribute-value ${key === 'population' ? 'highlight' : ''}`}>
-                      {formatFieldValue(value)}
+                      {formatFieldValue(value, key)}
                     </span>
                   </div>
                 ))}

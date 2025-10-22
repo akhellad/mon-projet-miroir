@@ -396,3 +396,80 @@
 .btn-refresh:active {
   background: #375B6A;
 }
+
+/* Styles pour le drag and drop */
+.layer-drag-handle {
+  cursor: grab;
+  color: #9ca3af;
+  font-size: 16px;
+  line-height: 1;
+  user-select: none;
+  padding: 0 4px;
+}
+
+.layer-drag-handle:active {
+  cursor: grabbing;
+}
+
+.layer-item-accordion.dragging {
+  opacity: 0.5;
+  border: 2px dashed #38ABAE;
+  background: #f0f9fa;
+}
+
+.layer-item-accordion.drag-over {
+  border: 2px solid #38ABAE;
+  background: #e6f7f8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(56, 171, 174, 0.2);
+}
+
+/* Styles pour la couche active */
+.layer-item-accordion.active-layer {
+  border: 2px solid #38ABAE;
+  background: #f0f9fa;
+  box-shadow: 0 2px 6px rgba(56, 171, 174, 0.15);
+}
+
+.layer-select-btn {
+  background: white;
+  border: 2px solid #e5e7eb;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.layer-select-btn:hover {
+  border-color: #38ABAE;
+  background: #f0f9fa;
+  box-shadow: 0 2px 4px rgba(56, 171, 174, 0.15);
+}
+
+.layer-select-btn.active {
+  border-color: #38ABAE;
+  background: #38ABAE;
+  box-shadow: 0 2px 4px rgba(56, 171, 174, 0.3);
+}
+
+.layer-select-btn.active:hover {
+  background: #57CC99;
+  border-color: #57CC99;
+}
+
+/* Icône de checkmark pour le bouton actif */
+.layer-select-btn.active::after {
+  content: '✓';
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+}

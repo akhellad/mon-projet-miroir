@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 from django.views.decorators.clickjacking import xframe_options_exempt
 from weasyprint import HTML
 from datetime import datetime
-from .models import Layer, Feature
+from .models import Layer, Commune
 from .serializers import LayerSerializer, FeatureSerializer
 from .charts import (
     generate_top_communes_chart,
@@ -47,6 +47,8 @@ def layer_geojson(request, layer_id):
 
         with connection.cursor() as cursor:
             # Important : ST_AsGeoJSON retourne du TEXT, il faut le caster en jsonb
+            # Note: Cette requête SQL doit être adaptée car properties n'existe plus
+            # Les propriétés doivent maintenant être récupérées depuis les tables métier
             cursor.execute("""
                 SELECT json_build_object(
                     'type', 'FeatureCollection',
@@ -55,7 +57,7 @@ def layer_geojson(request, layer_id):
                             'type', 'Feature',
                             'id', id,
                             'geometry', ST_AsGeoJSON(ST_Transform(geom, 4326))::json,
-                            'properties', properties
+                            'properties', json_build_object('id', id)
                         )
                     )
                 )
@@ -78,25 +80,31 @@ def layer_geojson(request, layer_id):
 def layer_properties(request, layer_id):
     """
     Retourne uniquement les propriétés des features (sans géométries) pour optimiser les stats
+    Utilise le serializer pour extraire automatiquement les propriétés des modèles métier
     """
     try:
         layer = Layer.objects.get(id=layer_id)
     except Layer.DoesNotExist:
         return Response({'error': 'Couche non trouvée'}, status=404)
 
-    # Récupérer uniquement les properties, pas les géométries
-    features = layer.features.all().values('id', 'properties')
+    # Utiliser le serializer pour extraire les propriétés
+    # select_related pour optimiser les requêtes
+    features = layer.features.select_related(
+        'commune', 'captage', 'uge', 'udi', 'canton', 'arrondissement'
+    ).all()
+    serializer = FeatureSerializer(features, many=True)
 
-    # Formater comme un FeatureCollection simplifié
+    # Le GeoFeatureModelSerializer retourne un GeoJSON avec type, geometry, properties
+    # Extraire uniquement les propriétés
     result = {
         'type': 'PropertiesCollection',
         'count': len(features),
         'features': [
             {
-                'id': f['id'],
-                'properties': f['properties']
+                'id': feature_geojson.get('id'),
+                'properties': feature_geojson.get('properties', {})
             }
-            for f in features
+            for feature_geojson in serializer.data.get('features', [])
         ]
     }
 
@@ -153,25 +161,10 @@ def export_commune_pdf(request, code_insee):
     Génère et retourne un PDF de fiche de synthèse pour une commune
     """
     try:
-        # Récupérer la couche Communes
-        communes_layer = Layer.objects.get(name='Communes')
-        # Récupérer la commune via son code INSEE
-        commune_feature = Feature.objects.get(
-            layer=communes_layer,
-            properties__code_insee=code_insee
-        )
+        # Récupérer directement la commune depuis le modèle métier
+        commune = Commune.objects.get(code_insee=code_insee)
 
-        # Créer un objet compatible avec le template
-        class CommuneCompat:
-            def __init__(self, feature):
-                self.nom = feature.properties.get('nom')
-                self.code_insee = feature.properties.get('code_insee')
-                self.population = feature.properties.get('population')
-                self.geom = feature.geom
-
-        commune = CommuneCompat(commune_feature)
-
-    except (Layer.DoesNotExist, Feature.DoesNotExist):
+    except Commune.DoesNotExist:
         return Response({'error': 'Commune non trouvée'}, status=404)
 
     # Génération des graphiques (similaires au dashboard)
@@ -208,25 +201,10 @@ def preview_commune_html(request, code_insee):
     Retourne le HTML de prévisualisation pour une commune (même template que le PDF)
     """
     try:
-        # Récupérer la couche Communes
-        communes_layer = Layer.objects.get(name='Communes')
-        # Récupérer la commune via son code INSEE
-        commune_feature = Feature.objects.get(
-            layer=communes_layer,
-            properties__code_insee=code_insee
-        )
+        # Récupérer directement la commune depuis le modèle métier
+        commune = Commune.objects.get(code_insee=code_insee)
 
-        # Créer un objet compatible avec le template
-        class CommuneCompat:
-            def __init__(self, feature):
-                self.nom = feature.properties.get('nom')
-                self.code_insee = feature.properties.get('code_insee')
-                self.population = feature.properties.get('population')
-                self.geom = feature.geom
-
-        commune = CommuneCompat(commune_feature)
-
-    except (Layer.DoesNotExist, Feature.DoesNotExist):
+    except Commune.DoesNotExist:
         return Response({'error': 'Commune non trouvée'}, status=404)
 
     # Génération des graphiques (similaires au dashboard)
@@ -248,3 +226,28 @@ def preview_commune_html(request, code_insee):
     html_string = render_to_string('observatoire/fiche_commune.html', context)
 
     return HttpResponse(html_string, content_type='text/html')
+
+
+@api_view(['POST'])
+def reorder_layers(request):
+    """
+    Met à jour l'ordre des couches pour gérer le z-index
+    Attend un payload: { "layers": [{"id": 1, "order": 0}, {"id": 2, "order": 1}, ...] }
+    """
+    layers_data = request.data.get('layers', [])
+
+    if not layers_data:
+        return Response({'error': 'Aucune donnée de couches fournie'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # Mise à jour en masse pour de meilleures performances
+        for layer_data in layers_data:
+            Layer.objects.filter(id=layer_data['id']).update(order=layer_data['order'])
+
+        return Response({'success': True, 'message': f'{len(layers_data)} couches réordonnées'})
+
+    except Exception as e:
+        return Response(
+            {'error': f'Erreur lors de la réorganisation: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

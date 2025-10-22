@@ -175,41 +175,15 @@ def import_shapefile(zip_file, layer_name, description='', identifier_field='id'
             print("Transfert des données vers le modèle Feature...")
 
             with connection.cursor() as cursor:
-                # Récupérer les noms de colonnes de la table temporaire (sauf geom et ogc_fid)
-                # Utiliser des paramètres pour éviter les injections SQL
-                cursor.execute("""
-                    SELECT column_name
-                    FROM information_schema.columns
-                    WHERE table_name = %s
-                    AND column_name NOT IN ('geom', 'ogc_fid', 'wkb_geometry')
-                    ORDER BY ordinal_position
-                """, [temp_table_name])
-
-                attribute_columns = [row[0] for row in cursor.fetchall()]
-
-                # Valider les noms de colonnes (doivent être des identifiants SQL valides)
-                for col in attribute_columns:
-                    if not re.match(r'^[a-zA-Z0-9_]+$', col):
-                        raise ValueError(f"Nom de colonne invalide : {col}")
-
-                # Construire le JSON des propriétés avec des identifiants quotés
-                if attribute_columns:
-                    properties_parts = []
-                    for col in attribute_columns:
-                        # Échapper les guillemets et utiliser des identifiants quotés
-                        properties_parts.append(f"'{col}', CAST({connection.ops.quote_name(col)} AS TEXT)")
-                    properties_json = "jsonb_build_object(" + ", ".join(properties_parts) + ")"
-                else:
-                    properties_json = "'{}'::jsonb"
-
-                # Insérer dans la table features
+                # Insérer uniquement les géométries dans la table features
+                # Les propriétés ne sont plus stockées en JSON car les modèles métier
+                # sont définis à l'avance (Commune, Captage, UGE, etc.)
                 # Utiliser quote_name pour le nom de table temporaire
                 insert_query = f"""
-                    INSERT INTO features (layer_id, geom, properties, created_at, updated_at)
+                    INSERT INTO features (layer_id, geom, created_at, updated_at)
                     SELECT
                         %s,
                         geom,
-                        {properties_json},
                         NOW(),
                         NOW()
                     FROM {connection.ops.quote_name(temp_table_name)}

@@ -1,5 +1,5 @@
 import { GeoJSON } from 'react-leaflet';
-import { useMemo, useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 
 /**
@@ -7,6 +7,7 @@ import L from 'leaflet';
  * - Supporte tous types de géométries (Point, LineString, Polygon, etc.)
  * - Gère la sélection visuelle des entités
  * - Optimise le rendu avec Canvas pour les grandes couches (>1000 entités)
+ * - L'ordre d'affichage est géré par l'ordre de création des composants
  *
  * @param {Object} data - Données GeoJSON à afficher
  * @param {Array} selectedFeatures - Liste des entités sélectionnées
@@ -14,7 +15,10 @@ import L from 'leaflet';
  * @param {Object} baseStyle - Style par défaut des entités
  * @param {Object} selectedStyle - Style des entités sélectionnées
  * @param {String} identifierField - Champ identifiant (ex: 'code_insee', 'id')
- * @param {Boolean} visible - Visibilité de la couche
+ * @param {Boolean} visible - Visibilité de la couche.
+ * @param {Number} order - Ordre de la couche pour le z-index.
+ * @param {Number} layerId - ID de la couche pour vérifier si elle est active
+ * @param {Boolean} isActive - Indique si cette couche est la couche active pour interaction
  */
 function GeoJSONLayer({
   data,
@@ -23,8 +27,16 @@ function GeoJSONLayer({
   baseStyle = {},
   selectedStyle = {},
   identifierField = null,
-  visible = true
+  visible = true,
+  order = 0, // Default order to 0 if not provided
+  layerId = null,
+  isActive = false
 }) {
+  const geoJsonRef = useRef(); // Ref to the GeoJSON component instance
+
+  // Nom du pane basé sur l'ordre (les panes sont créés au niveau de la carte dans App.jsx)
+  const paneName = `layer-order-${order}`;
+
   // Styles par défaut
   const defaultBaseStyle = {
     color: '#3388ff',
@@ -48,7 +60,7 @@ function GeoJSONLayer({
    * Extrait l'identifiant unique d'une entité
    * Priorité : identifierField > id > code_insee > autres champs
    */
-  const getFeatureId = (feature) => {
+  const getFeatureId = useCallback((feature) => {
     if (!feature) return null;
 
     if (identifierField) {
@@ -67,7 +79,7 @@ function GeoJSONLayer({
            feature.properties?.name ||
            feature.properties?.nom ||
            JSON.stringify(feature.geometry?.coordinates?.[0] || feature.properties));
-  };
+  }, [identifierField]);
 
   /**
    * Retourne le style approprié selon l'état de sélection
@@ -83,32 +95,54 @@ function GeoJSONLayer({
   const layersRef = useRef({});
 
   /**
-   * Configure les événements et le style pour chaque entité
+   * Convertit les points en cercles au lieu de marqueurs
+   * Note: Les CircleMarker n'utilisent pas le pane comme les polygones,
+   * mais on peut définir leur pane aussi pour la cohérence
    */
-  const onEachFeature = (feature, layer) => {
+  const pointToLayer = (feature, latlng) => {
+    const style = getStyle(feature);
+    return L.circleMarker(latlng, {
+      radius: 5,  // Rayon du cercle en pixels
+      ...style,
+      pane: paneName  // Utiliser le même pane que les autres géométries
+    });
+  };
+
+  /**
+   * Configure les événements et le style pour chaque entité
+   * Passe le layerId au callback pour vérification dans App.jsx
+   */
+  const onEachFeature = useCallback((feature, layer) => {
     const featureId = getFeatureId(feature);
     layersRef.current[featureId] = layer;
 
     if (onFeatureClick) {
       layer.on({
         click: () => {
-          if (layer.bringToFront) {
-            layer.bringToFront();
-          }
-          onFeatureClick(feature);
+          // Toujours déclencher le callback avec le layerId pour que App.jsx puisse vérifier
+          onFeatureClick(feature, layerId);
         }
       });
     }
 
-    // Mettre au premier plan si l'entité est sélectionnée
-    const isSelected = selectedFeatures.some(f => getFeatureId(f) === featureId);
-    if (isSelected && layer.bringToFront) {
-      layer.bringToFront();
-    }
-  };
+    // Modifier le curseur en fonction de l'état actif
+    layer.on({
+      mouseover: () => {
+        if (isActive) {
+          layer.getElement()?.style && (layer.getElement().style.cursor = 'pointer');
+        }
+      },
+      mouseout: () => {
+        if (isActive) {
+          layer.getElement()?.style && (layer.getElement().style.cursor = '');
+        }
+      }
+    });
+  }, [onFeatureClick, getFeatureId, isActive, layerId]);
+
 
   /**
-   * Met à jour le style et l'ordre d'affichage lorsque la sélection change
+   * Met à jour le style lorsque la sélection change
    */
   useEffect(() => {
     if (!data) return;
@@ -124,42 +158,28 @@ function GeoJSONLayer({
       if (layer.setStyle) {
         layer.setStyle(isSelected ? finalSelectedStyle : finalBaseStyle);
       }
-
-      if (isSelected && layer.bringToFront) {
-        setTimeout(() => layer.bringToFront(), 0);
-      }
     });
-  }, [selectedFeatures, finalSelectedStyle, finalBaseStyle, data, getFeatureId]);
+  }, [selectedFeatures, finalSelectedStyle, finalBaseStyle, data]);
+
 
   /**
-   * Génère une clé unique pour forcer le re-render si les données changent
+   * Désactivation du renderer Canvas car il cause des conflits avec les panes personnalisés
+   * Le renderer SVG par défaut fonctionne bien pour la plupart des cas d'usage
    */
-  const layerKey = useMemo(() => {
-    if (!data) return 'empty';
-    return `${JSON.stringify(data).substring(0, 100)}`;
-  }, [data]);
-
-  /**
-   * Sélectionne le moteur de rendu optimal selon le nombre d'entités
-   * Canvas pour >1000 entités, SVG pour les petites couches
-   */
-  const renderer = useMemo(() => {
-    if (data?.features && data.features.length > 1000) {
-      return L.canvas({ padding: 0.5 });
-    }
-    return undefined;
-  }, [data]);
+  const renderer = undefined;
 
   // Garde : ne rien afficher si la couche est invisible ou sans données
   if (!visible || !data) return null;
 
   return (
     <GeoJSON
-      key={layerKey}
+      ref={geoJsonRef}
       data={data}
       style={getStyle}
       onEachFeature={onEachFeature}
+      pointToLayer={pointToLayer}
       renderer={renderer}
+      pane={paneName}
     />
   );
 }

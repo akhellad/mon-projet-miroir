@@ -10,8 +10,14 @@ import * as turf from '@turf/turf';
  * - Sélection simple et par rectangle
  * - Mesures de distance et surface
  * - Navigation avec molette de souris
+ * @param {String} activeTool - Outil actif ('select', 'selectBox', 'measure', 'measureArea')
+ * @param {Function} onFeatureSelect - Callback de sélection d'entités
+ * @param {Function} onMeasureComplete - Callback de mesure complétée
+ * @param {Number} activeLayerId - ID de la couche active pour la sélection
+ * @param {Array} layers - Liste des couches disponibles
+ * @param {Object} layersData - Données GeoJSON des couches
  */
-function MapTools({ activeTool, onFeatureSelect, onMeasureComplete }) {
+function MapTools({ activeTool, onFeatureSelect, onMeasureComplete, activeLayerId, layers, layersData }) {
   const map = useMap();
   const drawControlRef = useRef(null);
   const drawnItemsRef = useRef(new L.FeatureGroup());
@@ -22,7 +28,32 @@ function MapTools({ activeTool, onFeatureSelect, onMeasureComplete }) {
     startPoint: null
   });
 
+  // Utiliser des refs pour avoir toujours les valeurs à jour dans les callbacks
+  const activeLayerIdRef = useRef(activeLayerId);
+  const layersRef = useRef(layers);
+  const layersDataRef = useRef(layersData);
+
   useEffect(() => {
+    activeLayerIdRef.current = activeLayerId;
+    layersRef.current = layers;
+    layersDataRef.current = layersData;
+  }, [activeLayerId, layers, layersData]);
+
+  useEffect(() => {
+    // Créer un pane pour les outils de dessin avec un z-index élevé
+    if (!map.getPane('drawPane')) {
+      const drawPane = map.createPane('drawPane');
+      drawPane.style.zIndex = 650; // Au-dessus des overlays (400-600) et des tooltips (600)
+      drawPane.style.pointerEvents = 'none'; // Ne pas bloquer les événements de clic
+    }
+
+    // Créer un pane pour les mesures avec un z-index élevé
+    if (!map.getPane('measurePane')) {
+      const measurePane = map.createPane('measurePane');
+      measurePane.style.zIndex = 640; // Juste en dessous du drawPane
+      measurePane.style.pointerEvents = 'none';
+    }
+
     // Ajouter les layers au map
     map.addLayer(drawnItemsRef.current);
     map.addLayer(measureLayerRef.current);
@@ -143,7 +174,8 @@ function MapTools({ activeTool, onFeatureSelect, onMeasureComplete }) {
             color: '#ef4444',
             weight: 2,
             fillOpacity: 0.1,
-            dashArray: '5, 5'
+            dashArray: '5, 5',
+            pane: 'drawPane'
           }).addTo(drawnItemsRef.current);
         };
 
@@ -355,14 +387,60 @@ function MapTools({ activeTool, onFeatureSelect, onMeasureComplete }) {
 
   // Fonction pour sélectionner une entité au clic (quand le rectangle est trop petit)
   const selectFeatureAtPoint = (latlng) => {
+    // Utiliser les refs pour avoir les valeurs à jour
+    const currentActiveLayerId = activeLayerIdRef.current;
+    const currentLayers = layersRef.current;
+    const currentLayersData = layersDataRef.current;
+
+    // Vérifier qu'une couche est active
+    if (!currentActiveLayerId) {
+      console.warn('Aucune couche active sélectionnée. Veuillez sélectionner une couche dans le panneau latéral.');
+      return;
+    }
+
+    // Trouver la couche active
+    const activeLayer = currentLayers?.find(l => l.id === currentActiveLayerId);
+    if (!activeLayer) {
+      console.warn('Couche active introuvable.');
+      return;
+    }
+
+    const activeLayerData = currentLayersData?.[currentActiveLayerId];
+    if (!activeLayerData) {
+      console.warn('Données de la couche active non chargées.');
+      return;
+    }
+
+    // Fonction pour obtenir l'identifiant d'une entité
+    const getFeatureId = (feature) => {
+      if (!feature) return null;
+
+      const identifierField = activeLayer.identifier_field;
+      if (identifierField) {
+        if (feature.properties?.[identifierField] !== undefined) {
+          return String(feature.properties[identifierField]);
+        }
+        if (feature[identifierField] !== undefined) {
+          return String(feature[identifierField]);
+        }
+      }
+
+      return String(feature.id ||
+             feature.properties?.code_insee ||
+             feature.properties?.id ||
+             feature.properties?.name ||
+             feature.properties?.nom ||
+             JSON.stringify(feature.geometry?.coordinates?.[0] || feature.properties));
+    };
+
     // Réinitialiser la sélection précédente
     selectedLayersRef.current.forEach(layer => {
       if (layer.setStyle) {
         layer.setStyle({
-          color: '#3388ff',
-          weight: 2,
-          opacity: 0.8,
-          fillOpacity: 0.2
+          color: activeLayer.style_color || '#3388ff',
+          weight: activeLayer.style_weight || 2,
+          opacity: activeLayer.style_opacity || 0.8,
+          fillOpacity: activeLayer.style_fill_opacity || 0.2
         });
       }
     });
@@ -378,20 +456,28 @@ function MapTools({ activeTool, onFeatureSelect, onMeasureComplete }) {
 
     let found = false;
     map.eachLayer((layer) => {
-      if (layer.feature && layer.getBounds && bounds.intersects(layer.getBounds())) {
-        found = true;
-        selectedLayersRef.current.push(layer);
-        if (layer.setStyle) {
-          layer.setStyle({
-            color: '#ef4444',
-            weight: 3,
-            opacity: 1,
-            fillOpacity: 0.3
-          });
-        }
-        if (layer.bringToFront) {
-          layer.bringToFront();
-        }
+      if (!layer.feature || !layer.getBounds || !bounds.intersects(layer.getBounds())) return;
+
+      // Vérifier que cette entité appartient à la couche active
+      const featureId = getFeatureId(layer.feature);
+      const isInActiveLayer = activeLayerData.features?.some(f =>
+        getFeatureId(f) === featureId
+      );
+
+      if (!isInActiveLayer) return;
+
+      found = true;
+      selectedLayersRef.current.push(layer);
+      if (layer.setStyle) {
+        layer.setStyle({
+          color: '#ef4444',
+          weight: 3,
+          opacity: 1,
+          fillOpacity: 0.3
+        });
+      }
+      if (layer.bringToFront) {
+        layer.bringToFront();
       }
     });
 
@@ -403,14 +489,38 @@ function MapTools({ activeTool, onFeatureSelect, onMeasureComplete }) {
 
   // Fonction pour sélectionner les entités dans un rectangle
   const selectFeaturesInBounds = (bounds) => {
+    // Utiliser les refs pour avoir les valeurs à jour
+    const currentActiveLayerId = activeLayerIdRef.current;
+    const currentLayers = layersRef.current;
+    const currentLayersData = layersDataRef.current;
+
+    // Vérifier qu'une couche est active
+    if (!currentActiveLayerId) {
+      console.warn('Aucune couche active sélectionnée. Veuillez sélectionner une couche dans le panneau latéral.');
+      return;
+    }
+
+    // Trouver la couche active et son identifierField
+    const activeLayer = currentLayers?.find(l => l.id === currentActiveLayerId);
+    if (!activeLayer) {
+      console.warn('Couche active introuvable.');
+      return;
+    }
+
+    const activeLayerData = currentLayersData?.[currentActiveLayerId];
+    if (!activeLayerData) {
+      console.warn('Données de la couche active non chargées.');
+      return;
+    }
+
     // Réinitialiser le style des entités précédemment sélectionnées
     selectedLayersRef.current.forEach(layer => {
       if (layer.setStyle) {
         layer.setStyle({
-          color: '#3388ff',
-          weight: 2,
-          opacity: 0.8,
-          fillOpacity: 0.2
+          color: activeLayer.style_color || '#3388ff',
+          weight: activeLayer.style_weight || 2,
+          opacity: activeLayer.style_opacity || 0.8,
+          fillOpacity: activeLayer.style_fill_opacity || 0.2
         });
       }
     });
@@ -433,17 +543,42 @@ function MapTools({ activeTool, onFeatureSelect, onMeasureComplete }) {
       [sw.lng, sw.lat]
     ]]);
 
+    // Fonction pour obtenir l'identifiant d'une entité
+    const getFeatureId = (feature) => {
+      if (!feature) return null;
+
+      const identifierField = activeLayer.identifier_field;
+      if (identifierField) {
+        if (feature.properties?.[identifierField] !== undefined) {
+          return String(feature.properties[identifierField]);
+        }
+        if (feature[identifierField] !== undefined) {
+          return String(feature[identifierField]);
+        }
+      }
+
+      return String(feature.id ||
+             feature.properties?.code_insee ||
+             feature.properties?.id ||
+             feature.properties?.name ||
+             feature.properties?.nom ||
+             JSON.stringify(feature.geometry?.coordinates?.[0] || feature.properties));
+    };
+
     // Parcourir toutes les couches de la carte
     map.eachLayer((layer) => {
       if (!layer.feature) return;
 
-      // Identifiant unique pour éviter les doublons (générique)
-      const featureId = layer.feature.id ||
-                       layer.feature.properties?.code_insee ||
-                       layer.feature.properties?.id ||
-                       layer.feature.properties?.name ||
-                       layer.feature.properties?.nom ||
-                       JSON.stringify(layer.feature.geometry?.coordinates?.[0] || layer.feature.properties);
+      // Vérifier que cette entité appartient à la couche active
+      // On compare l'identifiant de l'entité avec ceux de la couche active
+      const featureId = getFeatureId(layer.feature);
+
+      // Vérifier si cette entité existe dans les données de la couche active
+      const isInActiveLayer = activeLayerData.features?.some(f =>
+        getFeatureId(f) === featureId
+      );
+
+      if (!isInActiveLayer) return;
 
       // Éviter les doublons
       if (selectedIds.has(featureId)) return;

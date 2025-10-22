@@ -27,6 +27,8 @@ COPY . .
 
 EXPOSE 8000
 
+COPY data/ /app/data/
+
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, useMap, ZoomControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import './App.css';
@@ -42,6 +42,41 @@ function MapResizer({ sidebarVisible }) {
   return null;
 }
 
+/**
+ * Composant pour initialiser les panes personnalisés pour la gestion de l'ordre des couches
+ * Crée des panes avec des z-index différents pour contrôler l'empilement des couches vectorielles
+ * Met à jour les z-index quand l'ordre des couches change
+ */
+function LayerPanesInitializer({ layers }) {
+  const map = useMap();
+
+  useEffect(() => {
+    // Créer un pane pour chaque valeur d'order unique
+    const orderValues = new Set(layers.map(l => l.order || 0));
+
+    orderValues.forEach(order => {
+      const paneName = `layer-order-${order}`;
+
+      // Créer le pane s'il n'existe pas
+      if (!map.getPane(paneName)) {
+        const pane = map.createPane(paneName);
+        // Z-index de base pour overlays = 400
+        // On ajoute l'order pour avoir le bon empilement
+        pane.style.zIndex = 400 + order;
+        pane.style.pointerEvents = 'auto';
+      } else {
+        // Mettre à jour le z-index si le pane existe déjà
+        const pane = map.getPane(paneName);
+        if (pane) {
+          pane.style.zIndex = 400 + order;
+        }
+      }
+    });
+  }, [map, layers]);
+
+  return null;
+}
+
 function App() {
   const [currentPage, setCurrentPage] = useState('map');
   const [baseLayer, setBaseLayer] = useState('bdortho');
@@ -50,7 +85,14 @@ function App() {
   const [selectedFeatures, setSelectedFeatures] = useState([]);
   const [activeTool, setActiveTool] = useState('select');
 
-  const { layers, layersData } = useLayerContext();
+  const { layers, layersData, activeLayerId } = useLayerContext();
+
+  // Utiliser une ref pour avoir toujours la valeur à jour dans les callbacks
+  const activeLayerIdRef = useRef(activeLayerId);
+
+  useEffect(() => {
+    activeLayerIdRef.current = activeLayerId;
+  }, [activeLayerId]);
 
   const adminURL = import.meta.env.VITE_ADMIN_URL;
 
@@ -65,12 +107,31 @@ function App() {
     }
   }, [currentPage]);
 
+  // Réinitialiser la sélection quand on change de couche active
+  useEffect(() => {
+    setSelectedFeature(null);
+    setSelectedFeatures([]);
+  }, [activeLayerId]);
+
   const handleToolSelect = (toolId) => {
     setActiveTool(toolId);
   };
 
-  const handleFeatureClick = (feature) => {
+  const handleFeatureClick = (feature, layerId) => {
     if (activeTool === 'select' || activeTool === 'info') {
+      const currentActiveLayerId = activeLayerIdRef.current;
+
+      // Vérifier si une couche active est définie
+      if (currentActiveLayerId === null || currentActiveLayerId === undefined) {
+        console.warn('Aucune couche active. Veuillez sélectionner une couche dans le panneau latéral.');
+        return;
+      }
+
+      // Vérifier que le clic est sur la couche active
+      if (Number(layerId) !== Number(currentActiveLayerId)) {
+        return;
+      }
+
       setSelectedFeature(feature);
       setSelectedFeatures([feature]);
     }
@@ -177,6 +238,7 @@ function App() {
           style={{ height: '100%', width: '100%' }}
         >
           <MapResizer sidebarVisible={sidebarVisible} />
+          <LayerPanesInitializer layers={layers} />
           <ZoomControl position="topleft" />
 
           {baseLayer === 'bdortho' ? (
@@ -206,33 +268,42 @@ function App() {
             />
           )}
 
-          {/* Couches importées */}
-          {layers.map(layer => {
-            if (!layer.visible || !layersData[layer.id]) return null;
+          {/* Couches importées - triées par order croissant pour que les couches avec order élevé soient créées en dernier (donc au-dessus) */}
+          {[...layers]
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+            .map((layer) => {
+              if (!layer.visible || !layersData[layer.id]) return null;
 
-            return (
-              <GeoJSONLayer
-                key={`layer-${layer.id}`}
-                data={layersData[layer.id]}
-                selectedFeatures={selectedFeatures}
-                onFeatureClick={handleFeatureClick}
-                identifierField={layer.identifier_field}
-                baseStyle={{
-                  color: layer.style_color,
-                  weight: layer.style_weight,
-                  opacity: layer.style_opacity,
-                  fillOpacity: layer.style_fill_opacity
-                }}
-                visible={layer.visible}
-              />
-            );
-          })}
+              return (
+                <GeoJSONLayer
+                  key={`layer-${layer.id}-order-${layer.order}`}
+                  data={layersData[layer.id]}
+                  selectedFeatures={selectedFeatures}
+                  onFeatureClick={handleFeatureClick}
+                  identifierField={layer.identifier_field}
+                  baseStyle={{
+                    color: layer.style_color,
+                    // ... other style properties
+                    weight: layer.style_weight,
+                    opacity: layer.style_opacity,
+                    fillOpacity: layer.style_fill_opacity
+                  }}
+                  visible={layer.visible}
+                  order={layer.order}
+                  layerId={layer.id}
+                  isActive={activeLayerId === layer.id}
+                />
+              );
+            })}
 
           {/* Outils SIG (mesure, sélection, etc.) */}
           <MapTools
             activeTool={activeTool}
             onFeatureSelect={handleFeatureSelect}
             onMeasureComplete={handleMeasureComplete}
+            activeLayerId={activeLayerId}
+            layers={layers}
+            layersData={layersData}
           />
 
           {/* Échelle de la carte */}
