@@ -21,6 +21,8 @@ router.register(r'layers', LayerViewSet, basename='layer')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Routes d'authentification
+    path('api/auth/', include('authentication.urls')),
     # Routes spécifiques AVANT le router pour éviter les conflits
     path('api/layers/reorder/', reorder_layers, name='reorder_layers'),
     path('api/layers/<int:layer_id>/geojson/', layer_geojson, name='layer_geojson'),

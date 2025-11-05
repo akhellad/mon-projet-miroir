@@ -1,0 +1,605 @@
+/* ========== User Management Container ========== */
+.user-management {
+  padding: 32px;
+  background: #f5f7fa;
+  min-height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+
+/* ========== Header ========== */
+.user-management-header {
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.user-management-header h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+/* ========== Filters & Actions ========== */
+.user-filters {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input,
+.role-filter {
+  padding: 10px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+  font-size: 14px;
+  background: white;
+  transition: all 0.15s ease;
+}
+
+.search-input {
+  min-width: 250px;
+}
+
+.search-input:focus,
+.role-filter:focus {
+  outline: none;
+  border-color: #375B6A;
+  box-shadow: 0 0 0 2px rgba(55, 91, 106, 0.1);
+}
+
+.btn-create-user {
+  padding: 10px 20px;
+  background: #375B6A;
+  border-bottom: 2px solid #101685;
+  color: white;
+  border: none;
+  border-radius: 2px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-create-user:hover {
+  background: #2d4a57;
+  box-shadow: 0 2px 4px rgba(16, 22, 133, 0.2);
+}
+
+.btn-create-user:active {
+  background: #243c47;
+}
+
+/* ========== Users Table ========== */
+.users-table-container {
+  background: white;
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table thead {
+  background: #375B6A;
+  border-bottom: 2px solid #101685;
+  color: white;
+}
+
+.users-table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+}
+
+.users-table tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+  transition: background 0.2s ease;
+}
+
+.users-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.users-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.users-table td {
+  padding: 16px;
+  font-size: 14px;
+  color: #475569;
+}
+
+/* ========== Role Badge ========== */
+.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.role-badge.admin {
+  background: #dc2626;
+  color: white;
+}
+
+.role-badge.contributeur {
+  background: #375B6A;
+  color: white;
+}
+
+.role-badge.lecteur {
+  background: #64748b;
+  color: white;
+}
+
+/* ========== Status Badge ========== */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.status-badge.inactive {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ========== Action Buttons ========== */
+.user-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-edit,
+.btn-delete {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 2px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-edit {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-edit:hover {
+  background: #bfdbfe;
+}
+
+.btn-delete {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.btn-delete:hover {
+  background: #fecaca;
+}
+
+.btn-edit:disabled,
+.btn-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ========== Empty State ========== */
+.empty-state {
+  text-align: center;
+  padding: 64px 32px;
+  color: #64748b;
+}
+
+.empty-state h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ========== Loading State ========== */
+.loading-state {
+  text-align: center;
+  padding: 64px 32px;
+  color: #38abae;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* ========== Error Message ========== */
+.error-message {
+  background: #fee;
+  color: #991b1b;
+  padding: 16px;
+  border-radius: 2px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  border-left: 3px solid #dc2626;
+}
+
+/* ========== Success Message ========== */
+.success-message {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 16px;
+  border-radius: 2px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  border-left: 3px solid #10b981;
+}
+
+/* ========== Modal ========== */
+.modal-overlay {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  z-index: 3000;
+  animation: fadeIn 0.15s ease;
+  padding: 40px 20px 20px 20px;
+  overflow-y: auto;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  background: white;
+  border-radius: 2px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  background: #375B6A;
+  border-bottom: 2px solid #101685;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  padding: 24px;
+  border-top: 2px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* ========== Form Styles ========== */
+.user-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.form-group label .required {
+  color: #dc2626;
+  margin-left: 4px;
+}
+
+.form-group input,
+.form-group select {
+  padding: 12px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+  font-size: 14px;
+  transition: all 0.15s ease;
+  background: white;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #375B6A;
+  box-shadow: 0 0 0 2px rgba(55, 91, 106, 0.1);
+}
+
+.form-group input.error,
+.form-group select.error {
+  border-color: #dc2626;
+}
+
+.form-error {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.form-help {
+  color: #64748b;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* ========== Modal Buttons ========== */
+.btn-cancel,
+.btn-submit {
+  padding: 11px 24px;
+  border: none;
+  border-radius: 2px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cancel {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+.btn-submit {
+  background: #375B6A;
+  border-bottom: 2px solid #101685;
+  color: white;
+}
+
+.btn-submit:hover {
+  background: #2d4a57;
+  box-shadow: 0 2px 4px rgba(16, 22, 133, 0.2);
+}
+
+.btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  background: #dc2626;
+  border-bottom: 2px solid #991b1b;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+  box-shadow: 0 2px 4px rgba(153, 27, 27, 0.2);
+}
+
+/* ========== Password Info Box ========== */
+.password-info-box {
+  background: #e8f4f8;
+  border-left: 3px solid #375B6A;
+  padding: 16px;
+  border-radius: 2px;
+  margin-top: 8px;
+}
+
+.password-info-box strong {
+  display: block;
+  color: #1e293b;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.password-info-box p {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ========== Generated Password Display ========== */
+.password-generated-container {
+  text-align: center;
+  padding: 20px;
+}
+
+.password-generated-container h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 12px 0;
+}
+
+.password-generated-container p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 24px 0;
+}
+
+.generated-password-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.generated-password {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  color: #1e293b;
+  background: white;
+  padding: 12px;
+  border-radius: 2px;
+  border: 1px solid #cbd5e1;
+  word-break: break-all;
+}
+
+.btn-copy {
+  padding: 10px 16px;
+  background: #375B6A;
+  border-bottom: 2px solid #101685;
+  color: white;
+  border: none;
+  border-radius: 2px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-copy:hover {
+  background: #2d4a57;
+  box-shadow: 0 2px 4px rgba(16, 22, 133, 0.2);
+}
+
+.password-warning-box {
+  background: #fef9e7;
+  border-left: 3px solid #f4d03f;
+  padding: 16px;
+  border-radius: 2px;
+  text-align: left;
+}
+
+.password-warning-box strong {
+  display: block;
+  color: #5d4e00;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.password-warning-box ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #5d4e00;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.password-warning-box li {
+  margin-bottom: 4px;
+}
+
+/* ========== Responsive Design ========== */
+@media (max-width: 768px) {
+  .user-management {
+    padding: 16px;
+  }
+
+  .user-management-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .user-filters {
+    flex-direction: column;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .users-table-container {
+    overflow-x: auto;
+  }
+
+  .users-table {
+    min-width: 800px;
+  }
+
+  .modal {
+    width: 95%;
+    margin: 16px;
+  }
+}

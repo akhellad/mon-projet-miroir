@@ -1,25 +1,68 @@
+/* ========== Dashboard Container ========== */
 .dashboard {
   padding: 32px;
-  background: #f9fafb;
+  background: linear-gradient(135deg, #f0f9ff 0%, #f9fafb 100%);
   min-height: calc(100vh - 60px);
   overflow-y: auto;
 }
 
+/* ========== D3 Tooltip ========== */
+.d3-tooltip {
+  position: absolute;
+  background: linear-gradient(135deg, rgba(55, 91, 106, 0.95), rgba(56, 171, 174, 0.95));
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ========== D3 Axes Styling ========== */
+.x-axis path,
+.y-axis path {
+  stroke: #cbd5e1;
+  stroke-width: 1.5px;
+}
+
+.x-axis .tick line,
+.y-axis .tick line {
+  stroke: #e2e8f0;
+}
+
+.y-axis .tick line {
+  stroke-opacity: 0.6;
+  stroke-dasharray: 2,2;
+}
+
+/* ========== Dashboard Header ========== */
 .dashboard-header {
-  margin-bottom: 32px;
+  margin-bottom: 40px;
+  text-align: center;
+  padding: 20px 0;
 }
 
 .dashboard-header h2 {
   margin: 0 0 8px 0;
-  font-size: 28px;
-  font-weight: 700;
-  color: #375B6A;
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #375B6A 0%, #38ABAE 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
 }
 
 .dashboard-header p {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   color: #6b7280;
+  font-weight: 500;
 }
 
 /* Loading state */
@@ -59,33 +102,56 @@
   margin-bottom: 32px;
 }
 
+/* ========== Stat Cards ========== */
 .stat-card {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e5e7eb;
-  transition: transform 0.2s, box-shadow 0.2s;
+  background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
+  padding: 28px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #375B6A, #38ABAE, #57CC99);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(56, 171, 174, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: rgba(56, 171, 174, 0.3);
+}
+
+.stat-card:hover::before {
+  opacity: 1;
 }
 
 .stat-card-label {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: #6b7280;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
 }
 
 .stat-card-value {
-  font-size: 32px;
-  font-weight: 700;
-  color: #38ABAE;
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #38ABAE 0%, #57CC99 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   line-height: 1;
 }
 
@@ -95,12 +161,18 @@
   gap: 24px;
 }
 
+/* ========== Chart Cards ========== */
 .chart-card {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
+  padding: 28px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chart-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06);
 }
 
 .chart-card-wide {
@@ -108,10 +180,68 @@
 }
 
 .chart-card h3 {
-  margin: 0 0 20px 0;
-  font-size: 16px;
-  font-weight: 600;
+  margin: 0 0 24px 0;
+  font-size: 18px;
+  font-weight: 700;
   color: #375B6A;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(56, 171, 174, 0.2);
+}
+
+/* ========== D3 Axes Text ========== */
+.x-axis text,
+.y-axis text {
+  font-size: 11px;
+  fill: #4b5563;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 500;
+}
+
+.axis-label {
+  font-size: 13px;
+  fill: #375B6A;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* ========== Bar Chart Styling ========== */
+.bar {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.bar:hover {
+  fill: #57CC99 !important;
+  cursor: pointer;
+  filter: drop-shadow(0 4px 8px rgba(87, 204, 153, 0.4));
+}
+
+/* ========== Pie Chart Styling ========== */
+path.slice {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+path.slice:hover {
+  opacity: 0.85;
+  cursor: pointer;
+  transform: scale(1.05);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+/* ========== Chart Labels ========== */
+text.label,
+text.pie-label {
+  font-size: 11px;
+  fill: #1f2937;
+  text-anchor: middle;
+  pointer-events: none;
+  font-weight: 600;
+}
+
+text.pie-label-light {
+  fill: white;
+  font-weight: 700;
 }
 
 @media (max-width: 1200px) {

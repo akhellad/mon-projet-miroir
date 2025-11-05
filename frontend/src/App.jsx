@@ -22,6 +22,13 @@ import GeoJSONLayer from './components/GeoJSONLayer';
 import { useLayerContext } from './contexts/LayerContext';
 import MapScale from './components/MapScale';
 import MouseCoordinates from './components/MouseCoordinates';
+import UserManagement from './components/UserManagement';
+import './components/UserManagement.css';
+import UserProfile from './components/UserProfile';
+import './components/UserProfile.css';
+import ForcePasswordChange from './components/ForcePasswordChange';
+import PasswordChangePrompt from './components/PasswordChangePrompt';
+import { useAuth } from './contexts/AuthContext';
 
 /**
  * Composant utilitaire pour recalculer la taille de la carte
@@ -84,8 +91,46 @@ function App() {
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [selectedFeatures, setSelectedFeatures] = useState([]);
   const [activeTool, setActiveTool] = useState('select');
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
 
   const { layers, layersData, activeLayerId } = useLayerContext();
+  const { user } = useAuth();
+
+  // Si l'utilisateur doit changer son mot de passe
+  if (user?.must_change_password) {
+    // Si l'utilisateur a choisi de changer son mot de passe, afficher la page de changement
+    if (showPasswordChange) {
+      return (
+        <>
+          <Navbar currentPage="password-change" onPageChange={() => {}} />
+          <ForcePasswordChange
+            user={user}
+            onPasswordChanged={() => {
+              // Recharger la page pour récupérer l'utilisateur mis à jour
+              window.location.reload();
+            }}
+          />
+        </>
+      );
+    }
+
+    // Sinon, afficher la fenêtre de choix
+    return (
+      <>
+        <Navbar currentPage="password-prompt" onPageChange={() => {}} />
+        <PasswordChangePrompt
+          user={user}
+          onChangePassword={() => {
+            setShowPasswordChange(true);
+          }}
+          onKeepPassword={() => {
+            // Recharger la page pour récupérer l'utilisateur mis à jour
+            window.location.reload();
+          }}
+        />
+      </>
+    );
+  }
 
   // Utiliser une ref pour avoir toujours la valeur à jour dans les callbacks
   const activeLayerIdRef = useRef(activeLayerId);
@@ -93,8 +138,6 @@ function App() {
   useEffect(() => {
     activeLayerIdRef.current = activeLayerId;
   }, [activeLayerId]);
-
-  const adminURL = import.meta.env.VITE_ADMIN_URL;
 
   // Réinitialiser l'état de la carte quand on quitte la page map
   useEffect(() => {
@@ -178,14 +221,6 @@ function App() {
   return (
     <div style ={{ height: '100vh', width: '100vw', position: 'relative', overflow: 'hidden' }}>
       <Navbar currentPage={currentPage} onPageChange={setCurrentPage} />
-
-      <div style={{ position: 'fixed', top: 70, right: 10, zIndex: 1000 }}>
-        <a href={adminURL}>
-          <button style={{padding: '8px 12px', fontSize: '14px', cursor: 'pointer'}}>
-            Accéder à l'admin
-          </button>
-        </a>
-      </div>
 
       {/* Contenu de la carte - toujours présent mais caché si pas sur la page map */}
       <div style={{ display: currentPage === 'map' ? 'block' : 'none' }}>
@@ -367,6 +402,32 @@ function App() {
           overflow: 'auto'
         }}>
           <Export />
+        </div>
+      )}
+
+      {currentPage === 'users' && (
+        <div style={{
+          position: 'absolute',
+          top: 60,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflow: 'auto'
+        }}>
+          <UserManagement />
+        </div>
+      )}
+
+      {currentPage === 'profile' && (
+        <div style={{
+          position: 'absolute',
+          top: 60,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflow: 'auto'
+        }}>
+          <UserProfile />
         </div>
       )}
     </div>

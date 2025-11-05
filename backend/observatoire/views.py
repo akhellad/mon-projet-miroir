@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, parser_classes
+from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from django.http import HttpResponse
@@ -15,18 +15,37 @@ from .charts import (
     generate_population_distribution_bar_chart
 )
 from .shapefile_importer import import_shapefile
+from authentication.permissions import (
+    RoleBasedPermission,
+    CanUploadShapefile,
+    CanExportData,
+    IsLecteurOrAbove
+)
 
 
 class LayerViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour la gestion des couches géographiques.
+
+    Permissions:
+    - GET: Lecteur, Contributeur, Admin
+    - POST: Contributeur, Admin
+    - PATCH/PUT: Contributeur, Admin
+    - DELETE: Admin uniquement
+    """
     queryset = Layer.objects.all()
     serializer_class = LayerSerializer
+    permission_classes = [RoleBasedPermission]
 
 
 @api_view(['GET'])
+@permission_classes([IsLecteurOrAbove])
 def layer_geojson(request, layer_id):
     """
     Retourne toutes les features d'une couche au format GeoJSON
     Optimisé pour les grosses couches avec transformation SQL
+
+    Permissions: Lecteur, Contributeur, Admin
     """
     try:
         layer = Layer.objects.get(id=layer_id)
@@ -77,10 +96,13 @@ def layer_geojson(request, layer_id):
 
 
 @api_view(['GET'])
+@permission_classes([IsLecteurOrAbove])
 def layer_properties(request, layer_id):
     """
     Retourne uniquement les propriétés des features (sans géométries) pour optimiser les stats
     Utilise le serializer pour extraire automatiquement les propriétés des modèles métier
+
+    Permissions: Lecteur, Contributeur, Admin
     """
     try:
         layer = Layer.objects.get(id=layer_id)
@@ -113,10 +135,13 @@ def layer_properties(request, layer_id):
 
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
+@permission_classes([CanUploadShapefile])
 def upload_shapefile(request):
     """
     Upload et import d'un shapefile (fichier ZIP)
     Utilise ogr2ogr pour des performances optimales
+
+    Permissions: Contributeur, Admin
     """
     if 'file' not in request.FILES:
         return Response({'error': 'Aucun fichier fourni'}, status=status.HTTP_400_BAD_REQUEST)
@@ -156,9 +181,12 @@ def upload_shapefile(request):
         )
 
 @api_view(['GET'])
+@permission_classes([CanExportData])
 def export_commune_pdf(request, code_insee):
     """
     Génère et retourne un PDF de fiche de synthèse pour une commune
+
+    Permissions: Contributeur, Admin
     """
     try:
         # Récupérer directement la commune depuis le modèle métier
@@ -196,6 +224,7 @@ def export_commune_pdf(request, code_insee):
 
 @api_view(['GET'])
 @xframe_options_exempt
+@permission_classes([IsLecteurOrAbove])
 def preview_commune_html(request, code_insee):
     """
     Retourne le HTML de prévisualisation pour une commune (même template que le PDF)
@@ -229,10 +258,13 @@ def preview_commune_html(request, code_insee):
 
 
 @api_view(['POST'])
+@permission_classes([IsLecteurOrAbove])
 def reorder_layers(request):
     """
     Met à jour l'ordre des couches pour gérer le z-index
     Attend un payload: { "layers": [{"id": 1, "order": 0}, {"id": 2, "order": 1}, ...] }
+
+    Permissions: Lecteur, Contributeur, Admin (tous peuvent réorganiser leur vue)
     """
     layers_data = request.data.get('layers', [])
 

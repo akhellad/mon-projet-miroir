@@ -28,7 +28,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_gis',
     'corsheaders',
-    'observatoire'
+    'observatoire',
+    'authentication',
 ]
 
 MIDDLEWARE = [
@@ -38,6 +39,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'authentication.middleware.JWTAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -105,3 +107,46 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS - Origines autorisées pour les requêtes cross-origin
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173').split(',')
+
+# Django REST Framework - Configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        # Doit être en premier pour les appels API standards du frontend
+        'authentication.authentication.JWTAuthentication',
+        # Permet l'authentification via session pour la prévisualisation admin
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    # Par défaut, aucune permission n'est requise, elles sont définies par vue.
+    'DEFAULT_PERMISSION_CLASSES': [],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+}
+
+# Configuration du modèle User personnalisé
+AUTH_USER_MODEL = 'authentication.User'
+
+# Configuration de l'authentification JWT
+from datetime import timedelta
+
+AUTH_BACKEND = config('AUTH_BACKEND', default='authentication.backends.jwt_backend.JWTAuthBackend')
+JWT_SECRET_KEY = config('JWT_SECRET_KEY', default=SECRET_KEY)
+JWT_ALGORITHM = 'HS256'
+JWT_ACCESS_TOKEN_LIFETIME = timedelta(hours=8)  # Durée journée de travail
+JWT_REFRESH_TOKEN_LIFETIME = timedelta(days=7)  # Une semaine
+
+# Configuration du logging pour le débogage
+# Affiche tous les messages (DEBUG, INFO, WARNING, ERROR) dans la console
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',  # Affiche les messages DEBUG et supérieurs
+    },
+}

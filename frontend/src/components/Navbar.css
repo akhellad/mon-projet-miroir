@@ -95,6 +95,36 @@
   border-radius: 3px 3px 0 0;
 }
 
+.navbar-user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.navbar-username {
+  color: #8AC4FF;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.navbar-logout-btn {
+  padding: 6px 16px;
+  background: rgba(239, 68, 68, 0.9);
+  border: 1px solid rgba(220, 38, 38, 0.8);
+  border-radius: 6px;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navbar-logout-btn:hover {
+  background: rgba(220, 38, 38, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
 @media (max-width: 768px) {
   .navbar-container {
     padding: 0 16px;

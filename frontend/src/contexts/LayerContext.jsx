@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
+import { useAuth } from './AuthContext';
 
 /**
  * Contexte global pour la gestion des couches géographiques
@@ -11,6 +12,7 @@ import { API_BASE_URL } from '../config';
 const LayerContext = createContext();
 
 export function LayerProvider({ children }) {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [layers, setLayers] = useState([]);
   const [layersData, setLayersData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -79,10 +81,14 @@ export function LayerProvider({ children }) {
 
   /**
    * Chargement initial des couches au montage du composant
+   * Ne charge que si l'utilisateur est authentifié
    */
   useEffect(() => {
-    loadLayers(true);
-  }, [loadLayers]);
+    if (!authLoading && isAuthenticated) {
+      loadLayers(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, authLoading]); // loadLayers est stable via useCallback
 
   /**
    * Met à jour la visibilité d'une couche dans l'API et l'état local
