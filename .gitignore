@@ -53,3 +53,5 @@ yarn-error.log*
 # Sensitive data
 data/
 uploads/
+
+gitlab-token
